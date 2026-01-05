@@ -1,16 +1,25 @@
 """
 Rotas para upload de arquivos
 """
-import os
 import uuid
 from pathlib import Path
 from fastapi import APIRouter, UploadFile, File, HTTPException
+import cloudinary
+import cloudinary.uploader
 from app.config import settings
 
 router = APIRouter(prefix="/api/upload", tags=["upload"])
 
 ALLOWED_PDF_EXTENSIONS = {".pdf"}
 ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+
+# Configurar Cloudinary
+if settings.use_cloudinary:
+    cloudinary.config(
+        cloud_name=settings.CLOUDINARY_CLOUD_NAME,
+        api_key=settings.CLOUDINARY_API_KEY,
+        api_secret=settings.CLOUDINARY_API_SECRET
+    )
 
 
 def get_upload_path(subfolder: str) -> Path:
@@ -42,6 +51,21 @@ def get_safe_filename(original_filename: str) -> str:
     return f"{unique_id}_{safe_name}{ext}"
 
 
+async def upload_to_cloudinary(file: UploadFile, resource_type: str = "auto", folder: str = "carlota-mag"):
+    """Upload arquivo para Cloudinary"""
+    try:
+        content = await file.read()
+        result = cloudinary.uploader.upload(
+            content,
+            resource_type=resource_type,
+            folder=folder,
+            public_id=get_safe_filename(file.filename).rsplit('.', 1)[0]
+        )
+        return result["secure_url"]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro no upload: {str(e)}")
+
+
 @router.post("/pdf")
 async def upload_pdf(file: UploadFile = File(...)):
     """Upload de arquivo PDF"""
@@ -54,12 +78,17 @@ async def upload_pdf(file: UploadFile = File(...)):
     
     validate_file_size(file, settings.MAX_PDF_SIZE_MB)
     
+    if settings.use_cloudinary:
+        file_url = await upload_to_cloudinary(file, resource_type="raw", folder="carlota-mag/pdfs")
+        return {"file_url": file_url}
+    
+    # Fallback para upload local
     upload_path = get_upload_path("pdfs")
     filename = get_safe_filename(file.filename)
     file_path = upload_path / filename
     
+    content = await file.read()
     with open(file_path, "wb") as f:
-        content = await file.read()
         f.write(content)
     
     return {"file_url": f"/uploads/pdfs/{filename}"}
@@ -77,12 +106,17 @@ async def upload_cover(file: UploadFile = File(...)):
     
     validate_file_size(file, settings.MAX_IMAGE_SIZE_MB)
     
+    if settings.use_cloudinary:
+        file_url = await upload_to_cloudinary(file, resource_type="image", folder="carlota-mag/covers")
+        return {"file_url": file_url}
+    
+    # Fallback para upload local
     upload_path = get_upload_path("covers")
     filename = get_safe_filename(file.filename)
     file_path = upload_path / filename
     
+    content = await file.read()
     with open(file_path, "wb") as f:
-        content = await file.read()
         f.write(content)
     
     return {"file_url": f"/uploads/covers/{filename}"}
