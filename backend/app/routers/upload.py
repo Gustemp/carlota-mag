@@ -6,6 +6,8 @@ from pathlib import Path
 from fastapi import APIRouter, UploadFile, File, HTTPException
 import cloudinary
 import cloudinary.uploader
+import boto3
+from botocore.exceptions import ClientError
 from app.config import settings
 
 router = APIRouter(prefix="/api/upload", tags=["upload"])
@@ -19,6 +21,16 @@ if settings.use_cloudinary:
         cloud_name=settings.CLOUDINARY_CLOUD_NAME,
         api_key=settings.CLOUDINARY_API_KEY,
         api_secret=settings.CLOUDINARY_API_SECRET
+    )
+
+# Configurar AWS S3
+s3_client = None
+if settings.use_s3:
+    s3_client = boto3.client(
+        's3',
+        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+        region_name=settings.AWS_S3_REGION
     )
 
 
@@ -66,6 +78,32 @@ async def upload_to_cloudinary(file: UploadFile, resource_type: str = "auto", fo
         raise HTTPException(status_code=500, detail=f"Erro no upload: {str(e)}")
 
 
+async def upload_to_s3(file: UploadFile, folder: str = "uploads"):
+    """Upload arquivo para AWS S3"""
+    try:
+        content = await file.read()
+        filename = get_safe_filename(file.filename)
+        key = f"{folder}/{filename}"
+        
+        content_type = "application/pdf" if filename.endswith(".pdf") else "image/jpeg"
+        if filename.endswith(".png"):
+            content_type = "image/png"
+        elif filename.endswith(".webp"):
+            content_type = "image/webp"
+        
+        s3_client.put_object(
+            Bucket=settings.AWS_S3_BUCKET,
+            Key=key,
+            Body=content,
+            ContentType=content_type
+        )
+        
+        url = f"https://{settings.AWS_S3_BUCKET}.s3.{settings.AWS_S3_REGION}.amazonaws.com/{key}"
+        return url
+    except ClientError as e:
+        raise HTTPException(status_code=500, detail=f"Erro no upload S3: {str(e)}")
+
+
 @router.post("/pdf")
 async def upload_pdf(file: UploadFile = File(...)):
     """Upload de arquivo PDF"""
@@ -77,6 +115,11 @@ async def upload_pdf(file: UploadFile = File(...)):
         )
     
     validate_file_size(file, settings.MAX_PDF_SIZE_MB)
+    
+    # Prioridade: S3 > Cloudinary > Local
+    if settings.use_s3:
+        file_url = await upload_to_s3(file, folder="pdfs")
+        return {"file_url": file_url}
     
     if settings.use_cloudinary:
         file_url = await upload_to_cloudinary(file, resource_type="raw", folder="carlota-mag/pdfs")
@@ -105,6 +148,11 @@ async def upload_cover(file: UploadFile = File(...)):
         )
     
     validate_file_size(file, settings.MAX_IMAGE_SIZE_MB)
+    
+    # Prioridade: S3 > Cloudinary > Local
+    if settings.use_s3:
+        file_url = await upload_to_s3(file, folder="covers")
+        return {"file_url": file_url}
     
     if settings.use_cloudinary:
         file_url = await upload_to_cloudinary(file, resource_type="image", folder="carlota-mag/covers")
