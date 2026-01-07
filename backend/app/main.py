@@ -49,3 +49,15 @@ def root():
 @app.get("/health")
 def health_check():
     return {"status": "healthy"}
+
+
+@app.get("/debug/storage")
+def debug_storage():
+    return {
+        "use_s3": settings.use_s3,
+        "use_cloudinary": settings.use_cloudinary,
+        "s3_bucket": settings.AWS_S3_BUCKET or "not set",
+        "s3_region": settings.AWS_S3_REGION or "not set",
+        "has_aws_key": bool(settings.AWS_ACCESS_KEY_ID),
+        "has_aws_secret": bool(settings.AWS_SECRET_ACCESS_KEY),
+    }
