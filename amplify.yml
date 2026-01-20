@@ -8,7 +8,7 @@ applications:
             - npm ci
         build:
           commands:
-            - npm run build
+            - NODE_OPTIONS=--max-old-space-size=4096 npm run build
       artifacts:
         baseDirectory: dist
         files:
