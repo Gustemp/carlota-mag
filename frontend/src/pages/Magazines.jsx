@@ -3,8 +3,9 @@ import { motion } from "framer-motion"
 import { Link } from "react-router-dom"
 import { api } from "@/api/client"
 import MagazineGrid from "@/components/magazines/MagazineGrid"
+import SideMenu from "@/components/layout/SideMenu"
 
-export default function Home() {
+export default function Magazines() {
   const { data: magazines = [], isLoading } = useQuery({
     queryKey: ['magazines', 'published'],
     queryFn: () => api.magazines.list(true),
@@ -12,6 +13,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-white">
+      <SideMenu />
       {/* Hero Section */}
       <header className="relative h-[60vh] md:h-[70vh] bg-black flex items-center justify-center overflow-hidden">
         {/* Background Images Grid */}
@@ -82,10 +84,10 @@ export default function Home() {
             © {new Date().getFullYear()} Carlota Mag
           </p>
           <Link 
-            to="/admin"
+            to="/"
             className="text-xs tracking-[0.2em] text-neutral-400 hover:text-black transition-colors uppercase"
           >
-            Admin
+            Home
           </Link>
         </div>
       </footer>

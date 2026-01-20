@@ -1,4 +1,4 @@
-const API_BASE = '/api'
+const API_BASE = import.meta.env.VITE_API_URL || '/api'
 
 async function request(endpoint, options = {}) {
   const url = `${API_BASE}${endpoint}`
@@ -45,6 +45,84 @@ export const api = {
     
     delete: (id) => 
       request(`/magazines/${id}`, {
+        method: 'DELETE',
+      }),
+  },
+
+  articles: {
+    list: (publishedOnly = true) => 
+      request(`/articles?published_only=${publishedOnly}`),
+    
+    featured: () => 
+      request('/articles/featured'),
+    
+    get: (id) => 
+      request(`/articles/${id}`),
+    
+    create: (data) => 
+      request('/articles', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    
+    update: (id, data) => 
+      request(`/articles/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+    
+    delete: (id) => 
+      request(`/articles/${id}`, {
+        method: 'DELETE',
+      }),
+  },
+
+  services: {
+    list: (activeOnly = true) => 
+      request(`/services?active_only=${activeOnly}`),
+    
+    get: (id) => 
+      request(`/services/${id}`),
+    
+    create: (data) => 
+      request('/services', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    
+    update: (id, data) => 
+      request(`/services/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+    
+    delete: (id) => 
+      request(`/services/${id}`, {
+        method: 'DELETE',
+      }),
+  },
+
+  contacts: {
+    list: (unreadOnly = false) => 
+      request(`/contacts?unread_only=${unreadOnly}`),
+    
+    get: (id) => 
+      request(`/contacts/${id}`),
+    
+    create: (data) => 
+      request('/contacts', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    
+    update: (id, data) => 
+      request(`/contacts/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+    
+    delete: (id) => 
+      request(`/contacts/${id}`, {
         method: 'DELETE',
       }),
   },

@@ -15,6 +15,8 @@ export default function Reader() {
   const [numPages, setNumPages] = useState(null)
   const [pageNumber, setPageNumber] = useState(1)
   const [pageHeight, setPageHeight] = useState(null)
+  const [pageWidth, setPageWidth] = useState(null)
+  const [isMobile, setIsMobile] = useState(false)
   const [scale, setScale] = useState(1)
   const containerRef = useRef(null)
 
@@ -29,16 +31,22 @@ export default function Reader() {
   }
 
   useEffect(() => {
-    const updateHeight = () => {
+    const updateDimensions = () => {
       if (containerRef.current) {
         const headerHeight = 72
-        const availableHeight = window.innerHeight - headerHeight - 40
+        const mobileFooterHeight = window.innerWidth < 640 ? 60 : 0
+        const availableHeight = window.innerHeight - headerHeight - mobileFooterHeight - 40
+        const availableWidth = window.innerWidth - 80 // padding + espaço para setas
+        const mobile = window.innerWidth < 640
+        
         setPageHeight(availableHeight)
+        setPageWidth(availableWidth)
+        setIsMobile(mobile)
       }
     }
-    updateHeight()
-    window.addEventListener("resize", updateHeight)
-    return () => window.removeEventListener("resize", updateHeight)
+    updateDimensions()
+    window.addEventListener("resize", updateDimensions)
+    return () => window.removeEventListener("resize", updateDimensions)
   }, [])
 
   const goToPrevPage = () => setPageNumber(prev => Math.max(prev - 1, 1))
@@ -173,7 +181,7 @@ export default function Reader() {
       </header>
 
       {/* PDF Viewer */}
-      <main ref={containerRef} className="flex-1 flex items-center justify-center overflow-auto p-4 relative">
+      <main ref={containerRef} className={`flex-1 flex items-center justify-center p-4 relative ${isMobile ? 'overflow-hidden' : 'overflow-auto'}`}>
         {/* Seta Esquerda */}
         {pageNumber > 1 && (
           <button
@@ -199,7 +207,7 @@ export default function Reader() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className="flex items-center justify-center"
-          style={{ transform: `scale(${scale})`, transformOrigin: 'center center' }}
+          style={isMobile ? {} : { transform: `scale(${scale})`, transformOrigin: 'center center' }}
         >
           {magazine.pdf_url ? (
             <Document
@@ -218,7 +226,7 @@ export default function Reader() {
             >
               <Page 
                 pageNumber={pageNumber} 
-                height={pageHeight}
+                {...(isMobile ? { width: pageWidth } : { height: pageHeight })}
                 renderTextLayer={false}
                 renderAnnotationLayer={false}
                 className="shadow-2xl"

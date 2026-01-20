@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Link } from "react-router-dom"
 import { 
   Plus, Upload, Trash2, Eye, EyeOff, Pencil, X, 
-  FileText, Calendar, ImageIcon, Loader2, ArrowLeft, Lock
+  FileText, Calendar, ImageIcon, Loader2, ArrowLeft, Lock,
+  BookOpen, Newspaper, Briefcase, Mail, Check
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -33,13 +34,23 @@ import { api } from "@/api/client"
 const ADMIN_USER = "Ale2026"
 const ADMIN_PASS = "Joppert2026"
 
+const TABS = [
+  { id: "magazines", label: "Magazines", icon: BookOpen },
+  { id: "articles", label: "Articles", icon: Newspaper },
+  { id: "services", label: "Services", icon: Briefcase },
+  { id: "contacts", label: "Contacts", icon: Mail },
+]
+
 export default function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [loginData, setLoginData] = useState({ username: "", password: "" })
   const [loginError, setLoginError] = useState("")
+  const [activeTab, setActiveTab] = useState("magazines")
   
   const [showForm, setShowForm] = useState(false)
   const [editingMagazine, setEditingMagazine] = useState(null)
+  const [editingArticle, setEditingArticle] = useState(null)
+  const [editingService, setEditingService] = useState(null)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [uploadingPdf, setUploadingPdf] = useState(false)
   const [uploadingCover, setUploadingCover] = useState(false)
@@ -79,10 +90,27 @@ export default function Admin() {
 
   const queryClient = useQueryClient()
 
-  const { data: magazines = [], isLoading } = useQuery({
+  const { data: magazines = [], isLoading: loadingMagazines } = useQuery({
     queryKey: ['admin-magazines'],
     queryFn: () => api.magazines.list(false),
   })
+
+  const { data: articles = [], isLoading: loadingArticles } = useQuery({
+    queryKey: ['admin-articles'],
+    queryFn: () => api.articles.list(false),
+  })
+
+  const { data: services = [], isLoading: loadingServices } = useQuery({
+    queryKey: ['admin-services'],
+    queryFn: () => api.services.list(false),
+  })
+
+  const { data: contacts = [], isLoading: loadingContacts } = useQuery({
+    queryKey: ['admin-contacts'],
+    queryFn: () => api.contacts.list(false),
+  })
+
+  const isLoading = loadingMagazines || loadingArticles || loadingServices || loadingContacts
 
   const createMutation = useMutation({
     mutationFn: (data) => api.magazines.create(data),
@@ -138,10 +166,18 @@ export default function Admin() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    // Limpar campos vazios para enviar null ao invés de string vazia
+    const cleanedData = {
+      ...formData,
+      publish_date: formData.publish_date || null,
+      edition: formData.edition || null,
+      description: formData.description || null,
+      cover_image: formData.cover_image || null,
+    }
     if (editingMagazine) {
-      updateMutation.mutate({ id: editingMagazine.id, data: formData })
+      updateMutation.mutate({ id: editingMagazine.id, data: cleanedData })
     } else {
-      createMutation.mutate(formData)
+      createMutation.mutate(cleanedData)
     }
   }
 
@@ -248,11 +284,20 @@ export default function Admin() {
     )
   }
 
+  const getNewButtonLabel = () => {
+    switch (activeTab) {
+      case "magazines": return "Nova Edição"
+      case "articles": return "Novo Artigo"
+      case "services": return "Novo Serviço"
+      default: return "Novo"
+    }
+  }
+
   return (
     <div className="min-h-screen bg-neutral-50">
       {/* Header */}
       <header className="bg-black text-white">
-        <div className="max-w-7xl mx-auto px-6 md:px-12 py-8">
+        <div className="max-w-7xl mx-auto px-6 md:px-12 py-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="flex items-center gap-6">
               <Link 
@@ -264,24 +309,26 @@ export default function Admin() {
               </Link>
               <div className="h-6 w-px bg-white/20" />
               <div>
-                <p className="text-xs tracking-[0.3em] text-white/50 uppercase mb-2">
+                <p className="text-xs tracking-[0.3em] text-white/50 uppercase mb-1">
                   Painel Administrativo
                 </p>
                 <img 
                   src="/logo-white.jpeg" 
                   alt="Carlota" 
-                  className="h-8 md:h-10"
+                  className="h-6 md:h-8"
                 />
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <Button
-                onClick={() => setShowForm(true)}
-                className="bg-white text-black hover:bg-neutral-100 tracking-wide"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Nova Edição
-              </Button>
+              {activeTab !== "contacts" && (
+                <Button
+                  onClick={() => setShowForm(true)}
+                  className="bg-white text-black hover:bg-neutral-100 tracking-wide"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  {getNewButtonLabel()}
+                </Button>
+              )}
               <Button
                 onClick={handleLogout}
                 variant="outline"
@@ -292,37 +339,177 @@ export default function Admin() {
             </div>
           </div>
         </div>
+        
+        {/* Tabs */}
+        <div className="border-t border-white/10">
+          <div className="max-w-7xl mx-auto px-6 md:px-12">
+            <nav className="flex gap-1 overflow-x-auto">
+              {TABS.map((tab) => {
+                const Icon = tab.icon
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      setActiveTab(tab.id)
+                      setShowForm(false)
+                    }}
+                    className={`flex items-center gap-2 px-4 py-3 text-sm tracking-wide transition-colors whitespace-nowrap ${
+                      activeTab === tab.id
+                        ? "text-white border-b-2 border-white"
+                        : "text-white/50 hover:text-white/80"
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {tab.label}
+                  </button>
+                )
+              })}
+            </nav>
+          </div>
+        </div>
       </header>
 
       {/* Content */}
       <main className="max-w-7xl mx-auto px-6 md:px-12 py-12">
-        {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="bg-white rounded-lg p-6 animate-pulse">
-                <div className="h-48 bg-neutral-100 rounded mb-4" />
-                <div className="h-4 bg-neutral-100 rounded w-3/4" />
+        {/* Articles Tab */}
+        {activeTab === "articles" && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-2xl font-light">Artigos</h2>
+              <span className="text-sm text-neutral-500">{articles.length} artigos</span>
+            </div>
+            {articles.length === 0 ? (
+              <div className="text-center py-20 bg-white rounded-lg">
+                <Newspaper className="w-16 h-16 text-neutral-300 mx-auto mb-4" />
+                <h3 className="text-xl font-light text-neutral-500 mb-2">Nenhum artigo criado</h3>
+                <p className="text-neutral-400 text-sm mb-6">Comece adicionando seu primeiro artigo</p>
+                <Button onClick={() => setShowForm(true)} className="bg-black text-white hover:bg-neutral-800">
+                  <Plus className="w-4 h-4 mr-2" />Novo Artigo
+                </Button>
               </div>
-            ))}
+            ) : (
+              <div className="grid gap-4">
+                {articles.map((article) => (
+                  <div key={article.id} className="bg-white p-4 rounded-lg border flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      {article.cover_image && <img src={article.cover_image} alt="" className="w-16 h-16 object-cover rounded" />}
+                      <div>
+                        <h3 className="font-medium">{article.title}</h3>
+                        <p className="text-sm text-neutral-500">{article.category} • {article.author}</p>
+                      </div>
+                    </div>
+                    <Badge variant={article.is_published ? "default" : "secondary"}>
+                      {article.is_published ? "Publicado" : "Rascunho"}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        ) : magazines.length === 0 ? (
-          <div className="text-center py-20">
-            <FileText className="w-16 h-16 text-neutral-300 mx-auto mb-4" />
-            <h2 className="text-xl font-light text-neutral-500 mb-2">
-              Nenhuma edição criada
-            </h2>
-            <p className="text-neutral-400 text-sm mb-6">
-              Comece adicionando sua primeira revista
-            </p>
-            <Button
-              onClick={() => setShowForm(true)}
-              className="bg-black text-white hover:bg-neutral-800"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Criar Edição
-            </Button>
+        )}
+
+        {/* Services Tab */}
+        {activeTab === "services" && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-2xl font-light">Serviços</h2>
+              <span className="text-sm text-neutral-500">{services.length} serviços</span>
+            </div>
+            {services.length === 0 ? (
+              <div className="text-center py-20 bg-white rounded-lg">
+                <Briefcase className="w-16 h-16 text-neutral-300 mx-auto mb-4" />
+                <h3 className="text-xl font-light text-neutral-500 mb-2">Nenhum serviço criado</h3>
+                <p className="text-neutral-400 text-sm mb-6">Comece adicionando seu primeiro serviço</p>
+                <Button onClick={() => setShowForm(true)} className="bg-black text-white hover:bg-neutral-800">
+                  <Plus className="w-4 h-4 mr-2" />Novo Serviço
+                </Button>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {services.map((service) => (
+                  <div key={service.id} className="bg-white p-4 rounded-lg border flex items-center justify-between">
+                    <div>
+                      <h3 className="font-medium">{service.title}</h3>
+                      <p className="text-sm text-neutral-500 line-clamp-1">{service.description}</p>
+                    </div>
+                    <Badge variant={service.is_active ? "default" : "secondary"}>
+                      {service.is_active ? "Ativo" : "Inativo"}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        ) : (
+        )}
+
+        {/* Contacts Tab */}
+        {activeTab === "contacts" && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-2xl font-light">Mensagens de Contato</h2>
+              <span className="text-sm text-neutral-500">{contacts.length} mensagens</span>
+            </div>
+            {contacts.length === 0 ? (
+              <div className="text-center py-20 bg-white rounded-lg">
+                <Mail className="w-16 h-16 text-neutral-300 mx-auto mb-4" />
+                <h3 className="text-xl font-light text-neutral-500 mb-2">Nenhuma mensagem</h3>
+                <p className="text-neutral-400 text-sm">As mensagens de contato aparecerão aqui</p>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {contacts.map((contact) => (
+                  <div key={contact.id} className="bg-white p-4 rounded-lg border">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <h3 className="font-medium">{contact.name}</h3>
+                        <p className="text-sm text-neutral-500">{contact.email}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {!contact.is_read && <Badge className="bg-blue-500">Nova</Badge>}
+                        <span className="text-xs text-neutral-400">
+                          {new Date(contact.created_at).toLocaleDateString('pt-BR')}
+                        </span>
+                      </div>
+                    </div>
+                    {contact.subject && <p className="text-sm font-medium mb-1">{contact.subject}</p>}
+                    <p className="text-sm text-neutral-600">{contact.message}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Magazines Tab */}
+        {activeTab === "magazines" && (
+          <>
+            {loadingMagazines ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="bg-white rounded-lg p-6 animate-pulse">
+                    <div className="h-48 bg-neutral-100 rounded mb-4" />
+                    <div className="h-4 bg-neutral-100 rounded w-3/4" />
+                  </div>
+                ))}
+              </div>
+            ) : magazines.length === 0 ? (
+              <div className="text-center py-20">
+                <FileText className="w-16 h-16 text-neutral-300 mx-auto mb-4" />
+                <h2 className="text-xl font-light text-neutral-500 mb-2">
+                  Nenhuma edição criada
+                </h2>
+                <p className="text-neutral-400 text-sm mb-6">
+                  Comece adicionando sua primeira revista
+                </p>
+                <Button
+                  onClick={() => setShowForm(true)}
+                  className="bg-black text-white hover:bg-neutral-800"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Criar Edição
+                </Button>
+              </div>
+            ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <AnimatePresence>
               {magazines.map((magazine) => (
@@ -416,6 +603,8 @@ export default function Admin() {
               ))}
             </AnimatePresence>
           </div>
+            )}
+          </>
         )}
       </main>
 

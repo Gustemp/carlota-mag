@@ -8,7 +8,7 @@ from pathlib import Path
 
 from app.config import settings
 from app.database import engine, Base
-from app.routers import magazines_router, upload_router
+from app.routers import magazines_router, upload_router, articles_router, services_router, contacts_router
 
 # Criar tabelas no banco de dados
 Base.metadata.create_all(bind=engine)
@@ -39,6 +39,9 @@ app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads"
 # Rotas
 app.include_router(magazines_router)
 app.include_router(upload_router)
+app.include_router(articles_router)
+app.include_router(services_router)
+app.include_router(contacts_router)
 
 
 @app.get("/")
