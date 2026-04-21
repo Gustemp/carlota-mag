@@ -1,362 +1,154 @@
-import { useState, useRef } from "react"
-import { Link } from "react-router-dom"
-import { motion, useScroll, useTransform } from "framer-motion"
+import { useState } from "react"
 import { useMutation } from "@tanstack/react-query"
-import { Mail, Phone, MapPin, Send, Check } from "lucide-react"
+import { Check, ArrowUpRight, Mail, MapPin, Phone } from "lucide-react"
 import { api } from "@/api/client"
-import SideMenu from "@/components/layout/SideMenu"
-import { Button } from "@/components/ui/button"
+import TopNav from "@/components/layout/TopNav"
+import Footer from "@/components/layout/Footer"
 
-function HeroSection() {
-  const ref = useRef(null)
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start start", "end start"]
-  })
-  
-  const y = useTransform(scrollYProgress, [0, 1], [0, 200])
-  const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0])
-
-  return (
-    <section ref={ref} className="relative h-[50vh] flex items-center justify-center overflow-hidden">
-      <motion.div 
-        style={{ y }}
-        className="absolute inset-0"
-      >
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1423666639041-f56000c27a9a?w=1920&q=80')] bg-cover bg-center" />
-        <div className="absolute inset-0 bg-black/60" />
-      </motion.div>
-
-      <motion.div 
-        style={{ opacity }}
-        className="relative z-10 text-center px-6"
-      >
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="text-white/60 text-xs tracking-[0.3em] uppercase mb-4"
-        >
-          Carlota Magazine
-        </motion.p>
-        
-        <motion.h1
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          className="text-5xl md:text-7xl font-extralight tracking-wide text-white mb-6"
-        >
-          Contact
-        </motion.h1>
-        
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-          className="w-20 h-px bg-white/40 mx-auto"
-        />
-      </motion.div>
-    </section>
-  )
-}
-
-function ContactForm() {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    subject: "",
-    message: "",
-  })
-  const [submitted, setSubmitted] = useState(false)
+export default function Contact() {
+  const [form, setForm] = useState({ name: "", email: "", phone: "", subject: "", message: "" })
+  const [done, setDone] = useState(false)
 
   const mutation = useMutation({
     mutationFn: (data) => api.contacts.create(data),
     onSuccess: () => {
-      setSubmitted(true)
-      setFormData({ name: "", email: "", phone: "", subject: "", message: "" })
+      setDone(true)
+      setForm({ name: "", email: "", phone: "", subject: "", message: "" })
     },
   })
 
-  const handleSubmit = (e) => {
+  const onChange = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }))
+  const onSubmit = (e) => {
     e.preventDefault()
-    mutation.mutate(formData)
-  }
-
-  const handleChange = (e) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }))
-  }
-
-  if (submitted) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="text-center py-16"
-      >
-        <div className="w-20 h-20 bg-black rounded-full flex items-center justify-center mx-auto mb-6">
-          <Check className="w-10 h-10 text-white" />
-        </div>
-        <h3 className="text-2xl font-light text-black mb-4">Mensagem Enviada!</h3>
-        <p className="text-neutral-500 mb-8">
-          Obrigado pelo seu contato. Responderemos em breve.
-        </p>
-        <Button
-          onClick={() => setSubmitted(false)}
-          variant="outline"
-          className="border-black text-black hover:bg-black hover:text-white"
-        >
-          Enviar outra mensagem
-        </Button>
-      </motion.div>
-    )
+    mutation.mutate(form)
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid md:grid-cols-2 gap-6">
-        <div>
-          <label className="block text-xs tracking-[0.1em] uppercase text-neutral-500 mb-2">
-            Nome *
-          </label>
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-3 border border-neutral-200 focus:border-black outline-none transition-colors text-sm"
-            placeholder="Seu nome"
-          />
-        </div>
-        <div>
-          <label className="block text-xs tracking-[0.1em] uppercase text-neutral-500 mb-2">
-            Email *
-          </label>
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-3 border border-neutral-200 focus:border-black outline-none transition-colors text-sm"
-            placeholder="seu@email.com"
-          />
-        </div>
-      </div>
+    <div className="min-h-screen bg-white text-black">
+      <TopNav />
 
-      <div className="grid md:grid-cols-2 gap-6">
-        <div>
-          <label className="block text-xs tracking-[0.1em] uppercase text-neutral-500 mb-2">
-            Telefone
-          </label>
-          <input
-            type="tel"
-            name="phone"
-            value={formData.phone}
-            onChange={handleChange}
-            className="w-full px-4 py-3 border border-neutral-200 focus:border-black outline-none transition-colors text-sm"
-            placeholder="+351 000 000 000"
-          />
-        </div>
-        <div>
-          <label className="block text-xs tracking-[0.1em] uppercase text-neutral-500 mb-2">
-            Assunto
-          </label>
-          <select
-            name="subject"
-            value={formData.subject}
-            onChange={handleChange}
-            className="w-full px-4 py-3 border border-neutral-200 focus:border-black outline-none transition-colors text-sm bg-white"
-          >
-            <option value="">Selecione um assunto</option>
-            <option value="Assessoria de Imprensa">Assessoria de Imprensa</option>
-            <option value="Patrocínio">Patrocínio</option>
-            <option value="Parceria">Parceria</option>
-            <option value="Publicidade">Publicidade</option>
-            <option value="Outro">Outro</option>
-          </select>
-        </div>
-      </div>
-
-      <div>
-        <label className="block text-xs tracking-[0.1em] uppercase text-neutral-500 mb-2">
-          Mensagem *
-        </label>
-        <textarea
-          name="message"
-          value={formData.message}
-          onChange={handleChange}
-          required
-          rows={6}
-          className="w-full px-4 py-3 border border-neutral-200 focus:border-black outline-none transition-colors text-sm resize-none"
-          placeholder="Como podemos ajudar?"
-        />
-      </div>
-
-      <button
-        type="submit"
-        disabled={mutation.isPending}
-        className="inline-flex items-center gap-3 px-8 py-4 bg-black text-white text-xs tracking-[0.2em] uppercase hover:bg-neutral-800 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed group"
-      >
-        {mutation.isPending ? "Enviando..." : "Enviar Mensagem"}
-        <Send className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-      </button>
-
-      {mutation.isError && (
-        <p className="text-red-500 text-sm">
-          Erro ao enviar mensagem. Tente novamente.
-        </p>
-      )}
-    </form>
-  )
-}
-
-function ContactInfo() {
-  const contactDetails = [
-    {
-      icon: Mail,
-      label: "Email",
-      value: "contato@carlotamag.com",
-      href: "mailto:contato@carlotamag.com",
-    },
-    {
-      icon: Phone,
-      label: "Telefone",
-      value: "+351 000 000 000",
-      href: "tel:+351000000000",
-    },
-    {
-      icon: MapPin,
-      label: "Localização",
-      value: "Lisboa, Portugal",
-      href: null,
-    },
-  ]
-
-  return (
-    <div className="space-y-8">
-      <div>
-        <h3 className="text-2xl font-light text-black mb-4">Fale Conosco</h3>
-        <p className="text-neutral-500 leading-relaxed">
-          Estamos sempre abertos a novas parcerias, colaborações e ideias. 
-          Entre em contato e vamos criar algo extraordinário juntos.
-        </p>
-      </div>
-
-      <div className="space-y-6">
-        {contactDetails.map((item, index) => (
-          <motion.div
-            key={item.label}
-            initial={{ opacity: 0, x: -20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: index * 0.1 }}
-            viewport={{ once: true }}
-            className="flex items-start gap-4"
-          >
-            <div className="w-12 h-12 bg-neutral-100 rounded-full flex items-center justify-center flex-shrink-0">
-              <item.icon className="w-5 h-5 text-neutral-600" />
-            </div>
-            <div>
-              <p className="text-xs tracking-[0.1em] uppercase text-neutral-400 mb-1">
-                {item.label}
-              </p>
-              {item.href ? (
-                <a 
-                  href={item.href}
-                  className="text-black hover:text-neutral-600 transition-colors"
-                >
-                  {item.value}
-                </a>
-              ) : (
-                <p className="text-black">{item.value}</p>
-              )}
-            </div>
-          </motion.div>
-        ))}
-      </div>
-
-      <div className="pt-8 border-t border-neutral-100">
-        <p className="text-xs tracking-[0.1em] uppercase text-neutral-400 mb-4">
-          Horário de Atendimento
-        </p>
-        <p className="text-neutral-600">
-          Segunda a Sexta: 9h - 18h<br />
-          Sábado: 10h - 14h
-        </p>
-      </div>
-    </div>
-  )
-}
-
-export default function Contact() {
-  return (
-    <div className="min-h-screen bg-white">
-      <SideMenu />
-      <HeroSection />
-
-      {/* Contact Section */}
-      <section className="py-20 md:py-32">
-        <div className="max-w-7xl mx-auto px-6 md:px-12">
-          <div className="grid lg:grid-cols-2 gap-16 md:gap-24">
-            {/* Form */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-              viewport={{ once: true }}
-            >
-              <p className="text-xs tracking-[0.3em] text-neutral-400 uppercase mb-3">
-                Formulário
-              </p>
-              <h2 className="text-3xl md:text-4xl font-extralight tracking-wide text-black mb-10">
-                Envie sua Mensagem
-              </h2>
-              <ContactForm />
-            </motion.div>
-
-            {/* Info */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              viewport={{ once: true }}
-              className="lg:pl-12 lg:border-l border-neutral-100"
-            >
-              <ContactInfo />
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* Map Section */}
-      <section className="h-[400px] bg-neutral-100 relative">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1548707309-dcebeab9ea9b?w=1920&q=80')] bg-cover bg-center opacity-50" />
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center">
-            <MapPin className="w-12 h-12 text-black mx-auto mb-4" />
-            <p className="text-lg font-light text-black">Lisboa, Portugal</p>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t border-neutral-100 py-12 px-6 md:px-12">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <p className="text-xs tracking-[0.2em] text-neutral-400 uppercase">
-            © {new Date().getFullYear()} Carlota Mag
+      <section className="border-b border-black/10">
+        <div className="max-w-[1600px] mx-auto px-4 md:px-8 py-12 md:py-20">
+          <p className="text-[11px] tracking-[0.3em] uppercase text-red-600 mb-4">Say hi</p>
+          <h1 className="font-editorial font-black text-6xl md:text-9xl leading-[0.85] italic">Contact</h1>
+          <p className="mt-6 max-w-2xl text-lg text-neutral-600">
+            Parcerias, colaborações, propostas editoriais ou só porque te apetece.
+            Respondemos em 48h.
           </p>
-          <Link 
-            to="/"
-            className="text-xs tracking-[0.2em] text-neutral-400 hover:text-black transition-colors uppercase"
-          >
-            Home
-          </Link>
         </div>
-      </footer>
+      </section>
+
+      <section className="max-w-[1600px] mx-auto px-4 md:px-8 py-16 md:py-24 grid md:grid-cols-12 gap-12 md:gap-16">
+        {/* Form */}
+        <div className="md:col-span-7">
+          {done ? (
+            <div className="border border-black/10 p-10 md:p-14">
+              <div className="w-14 h-14 rounded-full bg-black text-white flex items-center justify-center mb-6">
+                <Check className="w-6 h-6" />
+              </div>
+              <h2 className="font-editorial font-black text-4xl md:text-5xl italic">Obrigado.</h2>
+              <p className="mt-4 text-neutral-600 max-w-md">
+                A tua mensagem foi recebida. A nossa equipa responde o mais breve possível.
+              </p>
+              <button
+                onClick={() => setDone(false)}
+                className="mt-8 inline-flex items-center gap-2 text-[11px] tracking-[0.25em] uppercase border-b border-black pb-1"
+              >
+                Enviar outra mensagem <ArrowUpRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={onSubmit} className="space-y-8">
+              <div className="grid md:grid-cols-2 gap-6">
+                <Field label="Nome *" name="name" value={form.name} onChange={onChange} required />
+                <Field label="Email *" name="email" type="email" value={form.email} onChange={onChange} required />
+              </div>
+              <div className="grid md:grid-cols-2 gap-6">
+                <Field label="Telefone" name="phone" value={form.phone} onChange={onChange} />
+                <div>
+                  <label className="block text-[10px] tracking-[0.3em] uppercase text-neutral-500 mb-2">Assunto</label>
+                  <select
+                    name="subject"
+                    value={form.subject}
+                    onChange={onChange}
+                    className="w-full bg-transparent border-b border-black/30 focus:border-black outline-none py-2 text-lg font-editorial"
+                  >
+                    <option value="">Seleciona</option>
+                    <option>Assessoria de Imprensa</option>
+                    <option>Patrocínio</option>
+                    <option>Parceria</option>
+                    <option>Publicidade</option>
+                    <option>Outro</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-[10px] tracking-[0.3em] uppercase text-neutral-500 mb-2">Mensagem *</label>
+                <textarea
+                  name="message"
+                  rows={6}
+                  value={form.message}
+                  onChange={onChange}
+                  required
+                  className="w-full bg-transparent border-b border-black/30 focus:border-black outline-none py-2 text-lg resize-none"
+                  placeholder="Como podemos ajudar?"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={mutation.isPending}
+                className="inline-flex items-center gap-2 bg-black text-white px-7 py-4 text-[11px] tracking-[0.25em] uppercase hover:bg-red-600 transition-colors disabled:opacity-50"
+              >
+                {mutation.isPending ? "A enviar..." : "Enviar mensagem"} <ArrowUpRight className="w-4 h-4" />
+              </button>
+              {mutation.isError && (
+                <p className="text-red-600 text-sm">Erro ao enviar. Tenta novamente.</p>
+              )}
+            </form>
+          )}
+        </div>
+
+        {/* Info */}
+        <aside className="md:col-span-5 md:border-l border-black/10 md:pl-12 space-y-10">
+          <InfoBlock icon={Mail} label="Email" value="ola@carlotamag.com" href="mailto:ola@carlotamag.com" />
+          <InfoBlock icon={Phone} label="Phone" value="+351 000 000 000" href="tel:+351000000000" />
+          <InfoBlock icon={MapPin} label="Studio" value="Lisboa, Portugal" />
+          <div className="pt-8 border-t border-black/10">
+            <p className="text-[10px] tracking-[0.3em] uppercase text-neutral-500 mb-3">Office hours</p>
+            <p className="text-neutral-700 leading-relaxed">
+              Seg — Sex · 10h — 19h<br />
+              Sábado · sob marcação
+            </p>
+          </div>
+        </aside>
+      </section>
+
+      <Footer />
     </div>
   )
+}
+
+function Field({ label, ...props }) {
+  return (
+    <div>
+      <label className="block text-[10px] tracking-[0.3em] uppercase text-neutral-500 mb-2">{label}</label>
+      <input
+        {...props}
+        className="w-full bg-transparent border-b border-black/30 focus:border-black outline-none py-2 text-lg font-editorial"
+      />
+    </div>
+  )
+}
+
+function InfoBlock({ icon: Icon, label, value, href }) {
+  const content = (
+    <div className="flex items-start gap-4 group">
+      <Icon className="w-5 h-5 mt-1 opacity-60 group-hover:opacity-100 transition-opacity" />
+      <div>
+        <p className="text-[10px] tracking-[0.3em] uppercase text-neutral-500 mb-1">{label}</p>
+        <p className="font-editorial italic text-2xl">{value}</p>
+      </div>
+    </div>
+  )
+  return href ? <a href={href} className="block">{content}</a> : <div>{content}</div>
 }

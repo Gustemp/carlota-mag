@@ -1,0 +1,27 @@
+version: 1.0
+runtime: python311
+build:
+  commands:
+    build:
+      - pip install --upgrade pip
+      - pip install -r requirements.txt
+run:
+  runtime-version: 3.11
+  command: uvicorn app.main:app --host 0.0.0.0 --port 8080
+  network:
+    port: 8080
+    env: PORT
+  env:
+    # Os valores abaixo são placeholders — configura os REAIS na consola AWS
+    # (App Runner → Service → Configuration → Environment variables)
+    - name: DATABASE_URL
+      value: "postgresql://USER:PASS@RDS_ENDPOINT:5432/carlota"
+    - name: CORS_ORIGINS
+      value: "https://carlota-mag-archive.netlify.app,https://main.XXXX.amplifyapp.com"
+    - name: AWS_S3_BUCKET
+      value: "carlota-mag-files"
+    - name: AWS_S3_REGION
+      value: "eu-west-1"
+    # Estas devem ser SECRETS (não values), configura via consola:
+    # - AWS_ACCESS_KEY_ID
+    # - AWS_SECRET_ACCESS_KEY

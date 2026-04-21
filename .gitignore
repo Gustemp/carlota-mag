@@ -15,6 +15,9 @@ build/
 # Database
 *.db
 
+# Deployment zips
+*.zip
+
 # Uploads (local only)
 backend/uploads/
 

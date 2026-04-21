@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Landing from './pages/Landing'
 import Magazines from './pages/Magazines'
 import News from './pages/News'
+import Article from './pages/Article'
 import Services from './pages/Services'
 import Contact from './pages/Contact'
 import Reader from './pages/Reader'
@@ -14,6 +15,7 @@ function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/magazines" element={<Magazines />} />
         <Route path="/news" element={<News />} />
+        <Route path="/news/:slug" element={<Article />} />
         <Route path="/services" element={<Services />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/reader" element={<Reader />} />

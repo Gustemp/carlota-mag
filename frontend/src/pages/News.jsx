@@ -1,332 +1,141 @@
-import { useRef } from "react"
+import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { Link } from "react-router-dom"
-import { motion, useScroll, useTransform } from "framer-motion"
-import { ArrowRight, Calendar, User } from "lucide-react"
+import { Link, useSearchParams } from "react-router-dom"
+import { ArrowUpRight } from "lucide-react"
 import { api } from "@/api/client"
-import SideMenu from "@/components/layout/SideMenu"
+import TopNav from "@/components/layout/TopNav"
+import Footer from "@/components/layout/Footer"
 
-const placeholderArticles = [
-  {
-    id: "1",
-    title: "A Nova Era do Design Sustentável",
-    slug: "nova-era-design-sustentavel",
-    excerpt: "Como a indústria da moda está se reinventando para um futuro mais consciente e responsável.",
-    cover_image: "https://images.unsplash.com/photo-1558171813-4c088753af8f?w=800&q=80",
-    category: "Sustentabilidade",
-    author: "Maria Santos",
-    publish_date: "2026-01-15",
-    is_featured: true,
-  },
-  {
-    id: "2",
-    title: "Tendências de Arte Contemporânea para 2026",
-    slug: "tendencias-arte-contemporanea-2026",
-    excerpt: "Exploramos as principais exposições e movimentos artísticos que definirão o próximo ano.",
-    cover_image: "https://images.unsplash.com/photo-1561214115-f2f134cc4912?w=800&q=80",
-    category: "Arte",
-    author: "João Silva",
-    publish_date: "2026-01-10",
-    is_featured: true,
-  },
-  {
-    id: "3",
-    title: "Entrevista Exclusiva: O Futuro da Fotografia",
-    slug: "entrevista-futuro-fotografia",
-    excerpt: "Conversamos com os principais fotógrafos sobre como a tecnologia está transformando a arte visual.",
-    cover_image: "https://images.unsplash.com/photo-1452587925148-ce544e77e70d?w=800&q=80",
-    category: "Fotografia",
-    author: "Ana Costa",
-    publish_date: "2026-01-05",
-    is_featured: false,
-  },
-  {
-    id: "4",
-    title: "Arquitetura Minimalista em Lisboa",
-    slug: "arquitetura-minimalista-lisboa",
-    excerpt: "Um tour pelos edifícios mais impressionantes da capital portuguesa.",
-    cover_image: "https://images.unsplash.com/photo-1487958449943-2429e8be8625?w=800&q=80",
-    category: "Arquitetura",
-    author: "Pedro Almeida",
-    publish_date: "2026-01-01",
-    is_featured: false,
-  },
-  {
-    id: "5",
-    title: "O Renascimento do Vinil",
-    slug: "renascimento-vinil",
-    excerpt: "Por que os discos de vinil estão conquistando uma nova geração de amantes da música.",
-    cover_image: "https://images.unsplash.com/photo-1483412033650-1015ddeb83d1?w=800&q=80",
-    category: "Música",
-    author: "Sofia Martins",
-    publish_date: "2025-12-28",
-    is_featured: false,
-  },
-  {
-    id: "6",
-    title: "Gastronomia de Autor: Novos Sabores",
-    slug: "gastronomia-autor-novos-sabores",
-    excerpt: "Os chefs que estão redefinindo a cozinha contemporânea com ingredientes locais.",
-    cover_image: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&q=80",
-    category: "Gastronomia",
-    author: "Carlos Ferreira",
-    publish_date: "2025-12-20",
-    is_featured: false,
-  },
+const placeholder = [
+  { id: "1", title: "A Nova Era do Design Sustentável", slug: "nova-era-design-sustentavel", excerpt: "Como a indústria da moda está se reinventando para um futuro mais consciente.", cover_image: "https://images.unsplash.com/photo-1558171813-4c088753af8f?w=1200&q=80", category: "Fashion", author: "Maria Santos", publish_date: "2026-01-15", is_featured: true },
+  { id: "2", title: "Tendências de Arte Contemporânea", slug: "tendencias-arte", excerpt: "Exposições e movimentos que definirão o próximo ano.", cover_image: "https://images.unsplash.com/photo-1561214115-f2f134cc4912?w=1200&q=80", category: "Art", author: "João Silva", publish_date: "2026-01-10", is_featured: true },
+  { id: "3", title: "O Futuro da Fotografia", slug: "futuro-fotografia", excerpt: "Como a tecnologia está transformando a arte visual.", cover_image: "https://images.unsplash.com/photo-1452587925148-ce544e77e70d?w=1200&q=80", category: "Culture", author: "Ana Costa", publish_date: "2026-01-05" },
+  { id: "4", title: "Arquitetura Minimalista em Lisboa", slug: "arquitetura-lisboa", excerpt: "Um tour pelos edifícios mais impressionantes da capital.", cover_image: "https://images.unsplash.com/photo-1487958449943-2429e8be8625?w=1200&q=80", category: "Culture", author: "Pedro Almeida", publish_date: "2026-01-01" },
+  { id: "5", title: "O Renascimento do Vinil", slug: "renascimento-vinil", excerpt: "Por que os discos estão conquistando uma nova geração.", cover_image: "https://images.unsplash.com/photo-1483412033650-1015ddeb83d1?w=1200&q=80", category: "Music", author: "Sofia Martins", publish_date: "2025-12-28" },
+  { id: "6", title: "Gastronomia de Autor", slug: "gastronomia-autor", excerpt: "Chefs redefinindo a cozinha contemporânea com ingredientes locais.", cover_image: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1200&q=80", category: "Culture", author: "Carlos Ferreira", publish_date: "2025-12-20" },
+  { id: "7", title: "Beauty files: the gloss is back", slug: "gloss-is-back", excerpt: "Por que o brilho exagerado é o mood da estação.", cover_image: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=1200&q=80", category: "Beauty", author: "Ana Costa", publish_date: "2026-01-18" },
+  { id: "8", title: "Street style: Barcelona", slug: "street-barcelona", excerpt: "Raw, real e muito bem vestido.", cover_image: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1200&q=80", category: "Fashion", author: "Flora Medina", publish_date: "2026-01-16" },
 ]
 
-function HeroSection() {
-  const ref = useRef(null)
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start start", "end start"]
-  })
-  
-  const y = useTransform(scrollYProgress, [0, 1], [0, 200])
-  const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0])
-
-  return (
-    <section ref={ref} className="relative h-[70vh] flex items-center justify-center overflow-hidden">
-      <motion.div 
-        style={{ y }}
-        className="absolute inset-0"
-      >
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=1920&q=80')] bg-cover bg-center" />
-        <div className="absolute inset-0 bg-black/60" />
-      </motion.div>
-
-      <motion.div 
-        style={{ opacity }}
-        className="relative z-10 text-center px-6"
-      >
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="text-white/60 text-xs tracking-[0.3em] uppercase mb-4"
-        >
-          Carlota Magazine
-        </motion.p>
-        
-        <motion.h1
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          className="text-5xl md:text-7xl font-extralight tracking-wide text-white mb-6"
-        >
-          News
-        </motion.h1>
-        
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-          className="w-20 h-px bg-white/40 mx-auto mb-6"
-        />
-        
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-          className="text-white/70 text-sm md:text-base tracking-wide max-w-md mx-auto"
-        >
-          Últimas notícias sobre arte, cultura e lifestyle
-        </motion.p>
-      </motion.div>
-    </section>
-  )
+function formatDate(d) {
+  return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).toUpperCase()
 }
 
-function FeaturedArticle({ article, index }) {
-  const ref = useRef(null)
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start end", "end start"]
-  })
-  
-  const y = useTransform(scrollYProgress, [0, 1], [100, -100])
-
+function Card({ article, size = "md" }) {
+  const titleCls = {
+    hero: "text-4xl md:text-6xl lg:text-7xl leading-[0.95]",
+    lg: "text-2xl md:text-3xl leading-[1.05]",
+    md: "text-xl leading-tight",
+  }[size]
   return (
-    <motion.article
-      ref={ref}
-      initial={{ opacity: 0, y: 50 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8, delay: index * 0.2 }}
-      viewport={{ once: true }}
-      className="group relative"
-    >
-      <Link to={`/news/${article.slug}`} className="block">
-        <div className="relative aspect-[16/10] overflow-hidden mb-6">
-          <motion.img
-            style={{ y }}
+    <Link to={`/news/${article.slug}`} className="group block">
+      <div className={`relative overflow-hidden bg-neutral-100 mb-4 ${size === "hero" ? "aspect-[16/10]" : "aspect-[4/5]"}`}>
+        {article.cover_image && (
+          <img
             src={article.cover_image}
             alt={article.title}
-            className="w-full h-[120%] object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
+            className="w-full h-full object-cover transition-transform duration-[900ms] group-hover:scale-[1.04]"
           />
-          <div className="absolute inset-0 bg-black/30 group-hover:bg-transparent transition-all duration-500" />
-          <div className="absolute top-4 left-4">
-            <span className="px-3 py-1 bg-white text-black text-xs tracking-[0.1em] uppercase">
-              {article.category}
-            </span>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-4 text-xs text-neutral-400 mb-3">
-          <span className="flex items-center gap-1">
-            <Calendar className="w-3 h-3" />
-            {new Date(article.publish_date).toLocaleDateString('pt-PT', { 
-              day: 'numeric', 
-              month: 'long', 
-              year: 'numeric' 
-            })}
-          </span>
-          <span className="flex items-center gap-1">
-            <User className="w-3 h-3" />
-            {article.author}
-          </span>
-        </div>
-        
-        <h2 className="text-2xl md:text-3xl font-light text-black mb-3 group-hover:text-neutral-600 transition-colors">
-          {article.title}
-        </h2>
-        
-        <p className="text-neutral-500 leading-relaxed mb-4">
-          {article.excerpt}
-        </p>
-        
-        <span className="inline-flex items-center gap-2 text-xs tracking-[0.1em] uppercase text-black group-hover:gap-3 transition-all">
-          Ler mais
-          <ArrowRight className="w-4 h-4" />
-        </span>
-      </Link>
-    </motion.article>
-  )
-}
-
-function ArticleCard({ article, index }) {
-  const ref = useRef(null)
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start end", "end start"]
-  })
-  
-  const y = useTransform(scrollYProgress, [0, 1], [50, -50])
-
-  return (
-    <motion.article
-      ref={ref}
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, delay: index * 0.1 }}
-      viewport={{ once: true }}
-      className="group"
-    >
-      <Link to={`/news/${article.slug}`} className="block">
-        <div className="relative aspect-[4/3] overflow-hidden mb-4">
-          <motion.img
-            style={{ y }}
-            src={article.cover_image}
-            alt={article.title}
-            className="w-full h-[120%] object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
-          />
-          <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-all duration-300" />
-        </div>
-        
-        <span className="text-xs tracking-[0.1em] uppercase text-neutral-400 mb-2 block">
+        )}
+        <span className="absolute top-3 left-3 bg-white text-black text-[10px] tracking-[0.25em] uppercase px-2 py-1">
           {article.category}
         </span>
-        
-        <h3 className="text-lg font-light text-black mb-2 group-hover:text-neutral-600 transition-colors line-clamp-2">
-          {article.title}
-        </h3>
-        
-        <p className="text-sm text-neutral-500 line-clamp-2">
-          {article.excerpt}
-        </p>
-      </Link>
-    </motion.article>
+      </div>
+      <h3 className={`font-editorial font-bold ${titleCls} group-hover:italic transition-all`}>
+        {article.title}
+      </h3>
+      {size !== "md" && article.excerpt && (
+        <p className="mt-3 text-neutral-600 line-clamp-2 max-w-prose">{article.excerpt}</p>
+      )}
+      <div className="mt-3 flex items-center gap-3 text-[10px] tracking-[0.2em] uppercase text-neutral-500">
+        <span>{article.author}</span>
+        <span className="opacity-40">·</span>
+        <span>{formatDate(article.publish_date)}</span>
+      </div>
+    </Link>
   )
 }
 
 export default function News() {
-  const { data: articles = [], isLoading } = useQuery({
+  const { data: apiArticles = [] } = useQuery({
     queryKey: ['articles', 'published'],
     queryFn: () => api.articles.list(true),
   })
+  const [params] = useSearchParams()
+  const catFromUrl = params.get('cat') || ""
+  const [filter, setFilter] = useState(catFromUrl)
 
-  const displayArticles = articles.length > 0 ? articles : placeholderArticles
-  const featuredArticles = displayArticles.filter(a => a.is_featured).slice(0, 2)
-  const regularArticles = displayArticles.filter(a => !a.is_featured)
+  const all = apiArticles.length > 0 ? apiArticles : placeholder
+  const categories = useMemo(() => {
+    const set = new Set(all.map((a) => a.category).filter(Boolean))
+    return ["All", ...Array.from(set)]
+  }, [all])
+
+  const filtered = useMemo(() => {
+    if (!filter || filter === "All") return all
+    return all.filter((a) => (a.category || "").toLowerCase() === filter.toLowerCase())
+  }, [all, filter])
+
+  const [hero, ...rest] = filtered
+  const top = rest.slice(0, 2)
+  const grid = rest.slice(2)
 
   return (
-    <div className="min-h-screen bg-white">
-      <SideMenu />
-      <HeroSection />
+    <div className="min-h-screen bg-white text-black">
+      <TopNav />
 
-      {/* Featured Articles */}
-      <section className="max-w-7xl mx-auto px-6 md:px-12 py-20 md:py-32">
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          transition={{ duration: 0.8 }}
-          viewport={{ once: true }}
-          className="mb-16"
-        >
-          <p className="text-xs tracking-[0.3em] text-neutral-400 uppercase mb-3">
-            Destaques
-          </p>
-          <h2 className="text-3xl md:text-4xl font-extralight tracking-wide text-black">
-            Em Evidência
-          </h2>
-        </motion.div>
-
-        <div className="grid md:grid-cols-2 gap-12">
-          {featuredArticles.map((article, index) => (
-            <FeaturedArticle key={article.id} article={article} index={index} />
-          ))}
+      {/* Masthead */}
+      <section className="border-b border-black/10">
+        <div className="max-w-[1600px] mx-auto px-4 md:px-8 py-12 md:py-16">
+          <p className="text-[11px] tracking-[0.3em] uppercase text-red-600 mb-4">Dispatches</p>
+          <h1 className="font-editorial font-black text-6xl md:text-9xl leading-[0.85] italic">News</h1>
+        </div>
+        <div className="max-w-[1600px] mx-auto px-4 md:px-8 pb-6 flex gap-2 flex-wrap">
+          {categories.map((c) => {
+            const active = (filter || "All") === c
+            return (
+              <button
+                key={c}
+                onClick={() => setFilter(c === "All" ? "" : c)}
+                className={`px-4 py-2 text-[10px] tracking-[0.25em] uppercase border transition-colors ${
+                  active ? "bg-black text-white border-black" : "border-black/20 hover:border-black"
+                }`}
+              >
+                {c}
+              </button>
+            )
+          })}
         </div>
       </section>
 
-      {/* All Articles */}
-      <section className="bg-neutral-50 py-20 md:py-32">
-        <div className="max-w-7xl mx-auto px-6 md:px-12">
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="mb-16"
-          >
-            <p className="text-xs tracking-[0.3em] text-neutral-400 uppercase mb-3">
-              Arquivo
-            </p>
-            <h2 className="text-3xl md:text-4xl font-extralight tracking-wide text-black">
-              Todas as Notícias
-            </h2>
-          </motion.div>
+      {hero && (
+        <section className="max-w-[1600px] mx-auto px-4 md:px-8 py-10 md:py-14 border-b border-black/10">
+          <Card article={hero} size="hero" />
+        </section>
+      )}
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-12">
-            {regularArticles.map((article, index) => (
-              <ArticleCard key={article.id} article={article} index={index} />
-            ))}
+      {top.length > 0 && (
+        <section className="max-w-[1600px] mx-auto px-4 md:px-8 py-12 md:py-16 border-b border-black/10">
+          <div className="grid md:grid-cols-2 gap-10 md:gap-14">
+            {top.map((a) => <Card key={a.id} article={a} size="lg" />)}
           </div>
+        </section>
+      )}
+
+      <section className="max-w-[1600px] mx-auto px-4 md:px-8 py-12 md:py-20">
+        <div className="flex items-baseline justify-between mb-8 border-b border-black/10 pb-4">
+          <h2 className="font-editorial italic text-2xl md:text-3xl font-bold">More stories</h2>
         </div>
+        {grid.length === 0 ? (
+          <p className="text-neutral-500 py-10">Sem mais artigos nesta categoria.</p>
+        ) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 md:gap-10">
+            {grid.map((a) => <Card key={a.id} article={a} size="md" />)}
+          </div>
+        )}
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-neutral-100 py-12 px-6 md:px-12">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <p className="text-xs tracking-[0.2em] text-neutral-400 uppercase">
-            © {new Date().getFullYear()} Carlota Mag
-          </p>
-          <Link 
-            to="/"
-            className="text-xs tracking-[0.2em] text-neutral-400 hover:text-black transition-colors uppercase"
-          >
-            Home
-          </Link>
-        </div>
-      </footer>
+      <Footer />
     </div>
   )
 }
